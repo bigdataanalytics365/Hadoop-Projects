@@ -1,0 +1,377 @@
+Rading bytes from the file now...
+Byte number 0 is read as 86
+XorCheckSum after byte 0 is read = 86
+--
+Byte number 1 is read as 59
+XorCheckSum after byte 1 is read = 109
+--
+Byte number 2 is read as 109
+XorCheckSum after byte 2 is read = 0
+--
+Byte number 3 is read as 116
+XorCheckSum after byte 3 is read = 116
+--
+Byte number 4 is read as 22
+XorCheckSum after byte 4 is read = 98
+--
+Byte number 5 is read as 1
+XorCheckSum after byte 5 is read = 99
+--
+Byte number 6 is read as 28
+XorCheckSum after byte 6 is read = 127
+--
+Byte number 7 is read as 25
+XorCheckSum after byte 7 is read = 102
+--
+Byte number 8 is read as 6
+XorCheckSum after byte 8 is read = 96
+--
+Byte number 9 is read as 15
+XorCheckSum after byte 9 is read = 111
+--
+Byte number 10 is read as 19
+XorCheckSum after byte 10 is read = 124
+--
+Byte number 11 is read as 22
+XorCheckSum after byte 11 is read = 106
+--
+Byte number 12 is read as 33
+XorCheckSum after byte 12 is read = 75
+--
+Byte number 13 is read as 76
+XorCheckSum after byte 13 is read = 7
+--
+Byte number 14 is read as 67
+XorCheckSum after byte 14 is read = 68
+--
+Byte number 15 is read as 117
+XorCheckSum after byte 15 is read = 49
+--
+Byte number 16 is read as 45
+XorCheckSum after byte 16 is read = 28
+--
+Byte number 17 is read as 40
+XorCheckSum after byte 17 is read = 52
+--
+Byte number 18 is read as 82
+XorCheckSum after byte 18 is read = 102
+--
+Byte number 19 is read as 58
+XorCheckSum after byte 19 is read = 92
+--
+Byte number 20 is read as 35
+XorCheckSum after byte 20 is read = 127
+--
+Byte number 21 is read as 49
+XorCheckSum after byte 21 is read = 78
+--
+Byte number 22 is read as 38
+XorCheckSum after byte 22 is read = 104
+--
+Byte number 23 is read as 31
+XorCheckSum after byte 23 is read = 119
+--
+Byte number 24 is read as 117
+XorCheckSum after byte 24 is read = 2
+--
+Byte number 25 is read as 39
+XorCheckSum after byte 25 is read = 37
+--
+Byte number 26 is read as 58
+XorCheckSum after byte 26 is read = 31
+--
+Byte number 27 is read as 12
+XorCheckSum after byte 27 is read = 19
+--
+Byte number 28 is read as 72
+XorCheckSum after byte 28 is read = 91
+--
+Byte number 29 is read as 126
+XorCheckSum after byte 29 is read = 37
+--
+Byte number 30 is read as 32
+XorCheckSum after byte 30 is read = 5
+--
+Byte number 31 is read as 98
+XorCheckSum after byte 31 is read = 103
+--
+Byte number 32 is read as 8
+XorCheckSum after byte 32 is read = 111
+--
+Byte number 33 is read as 83
+XorCheckSum after byte 33 is read = 60
+--
+Byte number 34 is read as 96
+XorCheckSum after byte 34 is read = 92
+--
+Byte number 35 is read as 121
+XorCheckSum after byte 35 is read = 37
+--
+Byte number 36 is read as 39
+XorCheckSum after byte 36 is read = 2
+--
+Byte number 37 is read as 47
+XorCheckSum after byte 37 is read = 45
+--
+Byte number 38 is read as 121
+XorCheckSum after byte 38 is read = 84
+--
+Byte number 39 is read as 86
+XorCheckSum after byte 39 is read = 2
+--
+Byte number 40 is read as 121
+XorCheckSum after byte 40 is read = 123
+--
+Byte number 41 is read as 107
+XorCheckSum after byte 41 is read = 16
+--
+Byte number 42 is read as 107
+XorCheckSum after byte 42 is read = 123
+--
+Byte number 43 is read as 95
+XorCheckSum after byte 43 is read = 36
+--
+Byte number 44 is read as 48
+XorCheckSum after byte 44 is read = 20
+--
+Byte number 45 is read as 95
+XorCheckSum after byte 45 is read = 75
+--
+Byte number 46 is read as 35
+XorCheckSum after byte 46 is read = 104
+--
+Byte number 47 is read as 4
+XorCheckSum after byte 47 is read = 108
+--
+Byte number 48 is read as 111
+XorCheckSum after byte 48 is read = 3
+--
+Byte number 49 is read as 0
+XorCheckSum after byte 49 is read = 3
+--
+Byte number 50 is read as 125
+XorCheckSum after byte 50 is read = 126
+--
+Byte number 51 is read as 120
+XorCheckSum after byte 51 is read = 6
+--
+Byte number 52 is read as 53
+XorCheckSum after byte 52 is read = 51
+--
+Byte number 53 is read as 28
+XorCheckSum after byte 53 is read = 47
+--
+Byte number 54 is read as 95
+XorCheckSum after byte 54 is read = 112
+--
+Byte number 55 is read as 102
+XorCheckSum after byte 55 is read = 22
+--
+Byte number 56 is read as 1
+XorCheckSum after byte 56 is read = 23
+--
+Byte number 57 is read as 50
+XorCheckSum after byte 57 is read = 37
+--
+Byte number 58 is read as 60
+XorCheckSum after byte 58 is read = 25
+--
+Byte number 59 is read as 54
+XorCheckSum after byte 59 is read = 47
+--
+Byte number 60 is read as 81
+XorCheckSum after byte 60 is read = 126
+--
+Byte number 61 is read as 101
+XorCheckSum after byte 61 is read = 27
+--
+Byte number 62 is read as 15
+XorCheckSum after byte 62 is read = 20
+--
+Byte number 63 is read as 58
+XorCheckSum after byte 63 is read = 46
+--
+Byte number 64 is read as 51
+XorCheckSum after byte 64 is read = 29
+--
+Byte number 65 is read as 52
+XorCheckSum after byte 65 is read = 41
+--
+Byte number 66 is read as 35
+XorCheckSum after byte 66 is read = 10
+--
+Byte number 67 is read as 17
+XorCheckSum after byte 67 is read = 27
+--
+Byte number 68 is read as 100
+XorCheckSum after byte 68 is read = 127
+--
+Byte number 69 is read as 61
+XorCheckSum after byte 69 is read = 66
+--
+Byte number 70 is read as 113
+XorCheckSum after byte 70 is read = 51
+--
+Byte number 71 is read as 89
+XorCheckSum after byte 71 is read = 106
+--
+Byte number 72 is read as 106
+XorCheckSum after byte 72 is read = 0
+--
+Byte number 73 is read as 126
+XorCheckSum after byte 73 is read = 126
+--
+Byte number 74 is read as 77
+XorCheckSum after byte 74 is read = 51
+--
+Byte number 75 is read as 121
+XorCheckSum after byte 75 is read = 74
+--
+Byte number 76 is read as 25
+XorCheckSum after byte 76 is read = 83
+--
+Byte number 77 is read as 69
+XorCheckSum after byte 77 is read = 22
+--
+Byte number 78 is read as 42
+XorCheckSum after byte 78 is read = 60
+--
+Byte number 79 is read as 8
+XorCheckSum after byte 79 is read = 52
+--
+Byte number 80 is read as 104
+XorCheckSum after byte 80 is read = 92
+--
+Byte number 81 is read as 84
+XorCheckSum after byte 81 is read = 8
+--
+Byte number 82 is read as 11
+XorCheckSum after byte 82 is read = 3
+--
+Byte number 83 is read as 5
+XorCheckSum after byte 83 is read = 6
+--
+Byte number 84 is read as 86
+XorCheckSum after byte 84 is read = 80
+--
+Byte number 85 is read as 104
+XorCheckSum after byte 85 is read = 56
+--
+Byte number 86 is read as 67
+XorCheckSum after byte 86 is read = 123
+--
+Byte number 87 is read as 78
+XorCheckSum after byte 87 is read = 53
+--
+Byte number 88 is read as 81
+XorCheckSum after byte 88 is read = 100
+--
+Byte number 89 is read as 102
+XorCheckSum after byte 89 is read = 2
+--
+Byte number 90 is read as 40
+XorCheckSum after byte 90 is read = 42
+--
+Byte number 91 is read as 106
+XorCheckSum after byte 91 is read = 64
+--
+Byte number 92 is read as 51
+XorCheckSum after byte 92 is read = 115
+--
+Byte number 93 is read as 94
+XorCheckSum after byte 93 is read = 45
+--
+Byte number 94 is read as 50
+XorCheckSum after byte 94 is read = 31
+--
+Byte number 95 is read as 109
+XorCheckSum after byte 95 is read = 114
+--
+Byte number 96 is read as 25
+XorCheckSum after byte 96 is read = 107
+--
+Byte number 97 is read as 87
+XorCheckSum after byte 97 is read = 60
+--
+Byte number 98 is read as 49
+XorCheckSum after byte 98 is read = 13
+--
+Byte number 99 is read as 93
+XorCheckSum after byte 99 is read = 80
+--
+Byte number 100 is read as 114
+XorCheckSum after byte 100 is read = 34
+--
+Byte number 101 is read as 74
+XorCheckSum after byte 101 is read = 104
+--
+Byte number 102 is read as 26
+XorCheckSum after byte 102 is read = 114
+--
+Byte number 103 is read as 20
+XorCheckSum after byte 103 is read = 102
+--
+Byte number 104 is read as 108
+XorCheckSum after byte 104 is read = 10
+--
+Byte number 105 is read as 121
+XorCheckSum after byte 105 is read = 115
+--
+Byte number 106 is read as 31
+XorCheckSum after byte 106 is read = 108
+--
+Byte number 107 is read as 67
+XorCheckSum after byte 107 is read = 47
+--
+Byte number 108 is read as 1
+XorCheckSum after byte 108 is read = 46
+--
+Byte number 109 is read as 100
+XorCheckSum after byte 109 is read = 74
+--
+Byte number 110 is read as 22
+XorCheckSum after byte 110 is read = 92
+--
+Byte number 111 is read as 71
+XorCheckSum after byte 111 is read = 27
+--
+Byte number 112 is read as 86
+XorCheckSum after byte 112 is read = 77
+--
+Byte number 113 is read as 67
+XorCheckSum after byte 113 is read = 14
+--
+Byte number 114 is read as 26
+XorCheckSum after byte 114 is read = 20
+--
+Byte number 115 is read as 51
+XorCheckSum after byte 115 is read = 39
+--
+Byte number 116 is read as 109
+XorCheckSum after byte 116 is read = 74
+--
+Byte number 117 is read as 126
+XorCheckSum after byte 117 is read = 52
+--
+Byte number 118 is read as 95
+XorCheckSum after byte 118 is read = 107
+--
+Byte number 119 is read as 65
+XorCheckSum after byte 119 is read = 42
+--
+Byte number 120 is read as 2
+XorCheckSum after byte 120 is read = 40
+--
+Byte number 121 is read as 6
+XorCheckSum after byte 121 is read = 46
+--
+Byte number 122 is read as 25
+XorCheckSum after byte 122 is read = 55
+--
+Byte number 123 is read as 69
+XorCheckSum after byte 123 is read = 114
+--
+Byte number 124 is read as 84
+XorCheckSum after byte 124 is read = 38
+--
+After reading the data from the file, the 8-bit XorCheckSum is computed as : 38
