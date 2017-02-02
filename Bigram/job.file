@@ -1,0 +1,13 @@
+----- PART 1 ------
+hadoop fs -rmr /scr/rvshah/lab2/exp1/output
+Hadoop fs –rmr /scr/rvshah/lab2/temp
+hadoop jar /home/rvshah/WordCount.jar WordCount
+hadoop jar /home/rvshah/WordCount.jar WordCount /class/s17419/lab2/shakespeare /scr/rvshah/lab2/exp1/output/
+
+
+
+----- PART 2  ------
+hadoop fs -rmr /scr/rvshah/lab2/exp2/output
+hadoop fs -rmr /scr/rvshah/lab2/exp2/temp
+hadoop jar /home/rvshah/Driver.jar Driver
+hadoop jar /home/rvshah/Driver.jar Driver /class/s17419/lab2/shakespeare /scr/rvshah/lab2/exp2/output/
