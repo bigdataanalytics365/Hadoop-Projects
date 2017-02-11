@@ -71,7 +71,7 @@ public class GraphTriangles extends Configured implements Tool {
 		
 		Job job_two = new Job(conf, "Graph Triangle Two"); 
 		job_two.setJarByClass(CitationGraph.class); 
-		job_two.setNumReduceTasks(1); 
+		job_two.setNumReduceTasks(2); 
 		
 		job_two.setOutputKeyClass(Text.class); 
 		job_two.setOutputValueClass(Text.class);
@@ -183,35 +183,25 @@ public class GraphTriangles extends Configured implements Tool {
 	  *		VALUE: Text - Format: vertex_id:neighbor_list
 	  */
 	public static class GraphTriangles_Reduce_Two extends Reducer<Text, Text, Text, Text>  {
-		private ArrayList<String> edges = new ArrayList<String>();
-		private ArrayList<String> processedVertex = new ArrayList<String>();
+		private ArrayList<String> triplets = new ArrayList<String>();
 		private int numberOfTriangles = 0;
+		private int numberOfTriplets = 0;
 		public void reduce(Text key, Iterable<Text> value, Context context) 
 				throws IOException, InterruptedException  {
 				// Construct 2-Neighborhood graph of vertex_id and enumarate all Triangles in this graph.
 				for(Text val : value){
-					if(!processedVertex.contains()){
-						String[] values = val.toString().split(":");
-						String vertex_id = values[0];
-						String[] neighbor_list = values[1].split(",");
-						// We need at least three verticies to form a triplet
-						if(neighbor_list.length > 1){
-							// vertex_id is the middle node, emit first and last element.
-							// String triplet = vertex_id+"-"+neighbor_list[0]+"-"+neighbor_list[neighbor_list.length-1];
-							for(String s: neighbor_list){
-								String edge = vertex_id+"-"+s;
-							}
-							String edge = neighbor_list[0]+"-"+neighbor_list[neighbor_list.length-1];
-							edges.add(triplet);
-							context.write(new Text(vertex_id), new Text(triplet));
-							
-							for(int i=0;i<neighbor_list.length-1;i++){
-								edge = neighbor_list[i]+"-"+neighbor_list[i+1];
-								edges.add(triplet);
-								context.write(new Text(vertex_id), new Text(triplet));
-							}
+					String[] values = val.toString().split(":");
+					String vertex_id = values[0];
+					String[] neighbor_list = values[1].split(",");
+					if(neighbor_list.length > 1){
+						for(int i=0; i<neighbor_list.length-1;i++){
+							triplets.add(neighbor_list[i]+"-"+vertex_id+"-"+neighbor_list[i+1]);
+							triplets.add(neighbor_list[i+1]+"-"+vertex_id+"-"+neighbor_list[i]);
+							numberOfTriplets++;
 						}
-						processedVertex.add(vertex_id);
+						triplets.add(neighbor_list[0]+"-"+vertex_id+"-"+neighbor_list[neighbor_list.length-1]);
+						triplets.add(neighbor_list[neighbor_list.length-1]+"-"+vertex_id+"-"+neighbor_list[0]);
+						numberOfTriplets++;
 					}
 				}
 		}  // End method "reduce"
@@ -220,7 +210,19 @@ public class GraphTriangles extends Configured implements Tool {
 		protected void cleanup(Context context)
 			throws IOException, InterruptedException {
 			// Compute the number of Triangles.
-			
+			String[] t = null;
+			for(int i=0;i<triplets.size()-3;i++){
+				t = triplets.get(i).split("-");
+				if((triplets.contains(t[1]+t[2]+t[0]) || triplets.contains(t[0]+t[2]+t[1])) &&
+					(triplets.contains(t[2]+t[0]+t[1]) || triplets.contains(t[1]+t[0]+t[2])) &&
+					(triplets.contains(t[2]+t[1]+t[0]) || triplets.contains(t[0]+t[1]+t[2])) ){
+					// This must be a triangle.
+					numberOfTriangles++;
+				}
+			}
+			context.write(new Text("Num Triplets"), new Text(Integer.toString(numberOfTriplets)));
+			context.write(new Text("Num Triangles"), new Text(Integer.toString(numberOfTriangles)));
+			context.write(new Text("GCC Value"), new Text(Double.toString((3*numberOfTriangles)/numberOfTriplets)));
 		}
 	}  // End Class GraphTriangles_Reduce_Two
 }
