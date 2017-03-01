@@ -15,6 +15,7 @@ import org.apache.hadoop.mapreduce.Reducer;
 import org.apache.hadoop.mapreduce.TaskAttemptContext;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
 import org.apache.hadoop.mapreduce.lib.input.FileSplit;
+import org.apache.hadoop.mapreduce.lib.input.TextInputFormat; 
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.TextOutputFormat;
 import org.apache.hadoop.util.GenericOptionsParser;
@@ -29,8 +30,9 @@ public class TweetAnalysis {
         String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
         // String input = "/class/s17419/lab5/university.json";
         // String output = "/scr/rvshah/lab5/exp1/output/";
-        String input = "/home/rushabhs/Desktop/CPRE/419/lab5/sample.json";
-        String output = "/home/rushabhs/Desktop/CPRE/419/lab5/output";
+        String input = "/home/rushabhs/Desktop/CPRE/419/lab5/test.json";
+        String hashTagOutput = "/home/rushabhs/Desktop/CPRE/419/lab5/outputHashtag";
+        String followerOutput = "/home/rushabhs/Desktop/CPRE/419/lab5/outputFollower";
         
         int reduce_tasks = 1;
         
@@ -63,15 +65,49 @@ public class TweetAnalysis {
         FileInputFormat.addInputPath(hashtagJob, new Path(input)); 
         
         // Output path
-        FileOutputFormat.setOutputPath(hashtagJob, new Path(output));
+        FileOutputFormat.setOutputPath(hashtagJob, new Path(hashTagOutput));
         
         // Run the job
         hashtagJob.waitForCompletion(true);
+
+        // Create a Hadoop Job
+        Job followerJob = Job.getInstance(conf, "Max Follower Job");
+        
+        // Attach the job to this Class
+        followerJob.setJarByClass(TweetAnalysis.class); 
+        
+        // Number of reducers
+        followerJob.setNumReduceTasks(reduce_tasks);
+        
+        followerJob.setMapOutputKeyClass(Text.class);
+        followerJob.setMapOutputValueClass(IntWritable.class);
+        followerJob.setOutputKeyClass(Text.class); 
+        followerJob.setOutputValueClass(Text.class);
+        
+        // Set the Map class
+        followerJob.setMapperClass(FolloweMapper.class); 
+        followerJob.setReducerClass(FollowerReducer.class);
+        
+        // Set how the input is split
+        // TextInputFormat.class splits the data per line
+        followerJob.setInputFormatClass(JSONInputFormat.class); 
+        
+        // Output format class
+        followerJob.setOutputFormatClass(TextOutputFormat.class);
+        
+        // Input path
+        FileInputFormat.addInputPath(followerJob, new Path(input)); 
+        
+        // Output path
+        FileOutputFormat.setOutputPath(followerJob, new Path(followerOutput));
+        
+        // Run the job
+        followerJob.waitForCompletion(true);
     } 
 
     /**
-	  * Map class
-	  * This class will map convert the file to SequenceFileOutputFormat to create partitions.
+	  * HashtagMapper class
+	  * This class will map the hashtag text to int 1.
 	  * 
 	  * Input:
 	  *		KEY: File offset
@@ -82,6 +118,7 @@ public class TweetAnalysis {
 	  */
     public static class HashtagMapper extends Mapper<LongWritable, Text, Text, IntWritable>  {
         public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException  {
+            // NOTE: The following code works on the sample file. I have also validated the JSON with JSONlint. Though when I ran the same code with same library on cystorm, it keeps giving me json mal form errors.
             JsonParser parser = new JsonParser();
             JsonObject tweet = parser.parse(value.toString()).getAsJsonObject();
             JsonArray hashtags = tweet.getAsJsonObject("entities").getAsJsonArray("hashtags");
@@ -111,84 +148,58 @@ public class TweetAnalysis {
 	  *		VALUE: # of times 
 	  */
     public static class HashtagReducer extends Reducer<Text, IntWritable, Text, Text>  {
-        private HashMap<Text, Integer> topTenHashTags = new HashMap<Text, Integer>();
         public void reduce(Text key, Iterable<IntWritable> values, Context context) throws IOException, InterruptedException  {
             int count = 0;
             for (IntWritable val : values) {
                 count++;
             }
-            // topTenHashTags.put(key, count);
             context.write(key, new Text(Integer.toString(count)));
         }
     }
 
-    // /**
-	//   * Map class
-	//   * This class will map convert the file to SequenceFileOutputFormat to create partitions.
-	//   * 
-	//   * Input:
-	//   *		KEY: File offset
-	//   *		VALUE: The JSON string read as custom input.
-	//   * Output:
-	//   *		KEY: hashtags
-	//   *		VALUE: 1
-	//   */
-    // public static class HashtagMapper extends Mapper<LongWritable, Text, Text, IntWritable>  {
-    //     public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException  {
-    //         JsonParser parser = new JsonParser();
-    //         JsonElement tweetElement = parser.parse(value.toString());
-    //         if(tweetElement.isJsonObject()){
-    //             JsonObject tweet = tweetElement.getAsJsonObject();
-    //             JsonArray hashtags = tweet.getAsJsonObject("entities").getAsJsonArray("hashtags");
-    //             Map<String, Integer> tags = new HashMap<String, Integer>();
-    //             if(hashtags != null){
-    //                 for(JsonElement tag: hashtags){
-    //                     JsonObject temp = tag.getAsJsonObject();
-    //                     String tagText = temp.get("text").getAsString();
-    //                     tags.put(tagText,1);
-    //                 }
-    //                 for(String tag: tags.keySet()){
-    //                     context.write(new Text(tag), new IntWritable(1));
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
-    // 
-    // /**
-	//   * Reduce class
-	//   * This class will map convert the file to SequenceFileOutputFormat to create partitions.
-	//   * 
-	//   * Input:
-	//   *		KEY: hashtags
-	//   *		VALUE: 1
-	//   * Output:
-	//   *		KEY: hashtags
-	//   *		VALUE: # of times 
-	//   */
-    // public static class HashtagReducer extends Reducer<Text, IntWritable, Text, Text>  {
-    //     private TreeMap<Integer, Text> topTenHashTags = new TreeMap<Integer, Text>(Collections.reverseOrder());
-    //     public void reduce(Text key, Iterable<IntWritable> values, Context context) throws IOException, InterruptedException  {
-    //         int count = 0;
-    //         for (IntWritable val : values) {
-    //             count++;
-    //         }
-    //         topTenHashTags.put(count, key);
-    //     }
-    //     
-    //     @Override
-    //     protected void cleanup(Context context) throws IOException, InterruptedException {
-    //         int count = 0;
-    //         for(Map.Entry<Integer,Text> entry : topTenHashTags.entrySet()) {
-    //             if(count == 10){
-    //                 break;
-    //             }else{
-    //                 count++;
-    //             }
-    //             context.write(entry.getValue(), new Text(Integer.toString(entry.getKey())));
-    //         }
-    //     }
-    // }
+    /**
+	  * FolloweMapper class
+	  * This class will map convert the file to SequenceFileOutputFormat to create partitions.
+	  * 
+	  * Input:
+	  *		KEY: File offset
+	  *		VALUE: The JSON string read as custom input.
+	  * Output:
+	  *		KEY: hashtags
+	  *		VALUE: 1
+	  */
+    public static class FolloweMapper extends Mapper<LongWritable, Text, Text, IntWritable>  {
+        public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException  {
+            JsonParser parser = new JsonParser();
+            JsonObject user = parser.parse(value.toString()).getAsJsonObject().getAsJsonObject("user");
+                // Emit the screen_name => followers_count
+                context.write(new Text(user.getAsJsonPrimitive("screen_name").getAsString()), new IntWritable(user.getAsJsonPrimitive("followers_count").getAsInt()));
+        }
+    }
+    
+    /**
+	  * FollowerReducerReduce class
+	  * This class will map convert the file to SequenceFileOutputFormat to create partitions.
+	  * 
+	  * Input:
+	  *		KEY: hashtags
+	  *		VALUE: 1
+	  * Output:
+	  *		KEY: hashtags
+	  *		VALUE: # of times 
+	  */
+    public static class FollowerReducer extends Reducer<Text, IntWritable, Text, Text>  {
+        public void reduce(Text key, Iterable<IntWritable> values, Context context) throws IOException, InterruptedException  {
+            int maxFollower = 0;
+            for (IntWritable val : values) {
+                // Compute the max followers_count for this user.
+                if(val.get() > maxFollower){
+                    maxFollower = val.get();
+                }
+            }
+            context.write(key, new Text(Integer.toString(maxFollower)));
+        }
+    }
 
     /**
 	  * JSONInputFormat class
