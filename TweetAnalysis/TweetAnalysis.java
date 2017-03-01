@@ -28,11 +28,12 @@ public class TweetAnalysis {
         
         Configuration conf = new Configuration();
         String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
-        // String input = "/class/s17419/lab5/university.json";
-        // String output = "/scr/rvshah/lab5/exp1/output/";
-        String input = "/home/rushabhs/Desktop/CPRE/419/lab5/test.json";
-        String hashTagOutput = "/home/rushabhs/Desktop/CPRE/419/lab5/outputHashtag";
-        String followerOutput = "/home/rushabhs/Desktop/CPRE/419/lab5/outputFollower";
+        String input = "/class/s17419/lab5/university.json";
+        String hashTagOutput = "/scr/rvshah/lab5/exp1/output/";
+        String followerOutput = "/scr/rvshah/lab5/exp2/output/";
+        // String input = "/home/rushabhs/Desktop/CPRE/419/lab5/test.json";
+        // String hashTagOutput = "/home/rushabhs/Desktop/CPRE/419/lab5/outputHashtag";
+        // String followerOutput = "/home/rushabhs/Desktop/CPRE/419/lab5/outputFollower";
         
         int reduce_tasks = 1;
         
