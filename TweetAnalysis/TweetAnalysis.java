@@ -23,22 +23,33 @@ import org.apache.hadoop.util.LineReader;
 import java.util.*;
 import com.google.gson.*;
 
+// NOTE: The following code works on the sample file. 
+// I have took the first ~50,000 from the university.json file and run it locally. It works and output is attached in the report.
+// Though when running the same code on cystorm cluster, it kept throwing JsonMalformed error without any useful trace to debug.
+
+/**
+ * TweetAnalysis class
+ */
 public class TweetAnalysis {
     public static void main(String[] args) throws Exception {
         
         Configuration conf = new Configuration();
         String[] otherArgs = new GenericOptionsParser(conf, args).getRemainingArgs();
-        String input = "/class/s17419/lab5/university.json";
-        String hashTagOutput = "/scr/rvshah/lab5/exp1/output/";
-        String followerOutput = "/scr/rvshah/lab5/exp2/output/";
-        // String input = "/home/rushabhs/Desktop/CPRE/419/lab5/test.json";
-        // String hashTagOutput = "/home/rushabhs/Desktop/CPRE/419/lab5/outputHashtag";
-        // String followerOutput = "/home/rushabhs/Desktop/CPRE/419/lab5/outputFollower";
+        // String input = "/class/s17419/lab5/university.json";
+        // String hashTagOutput = "/scr/rvshah/lab5/exp1/output/";
+        // String followerOutput = "/scr/rvshah/lab5/exp2/output/";
+        // String profilicOutput = "/scr/rvshah/lab5/exp3/output/";
+
+        String input = "/home/rushabhs/Desktop/CPRE/419/lab5/test.json";
+        String hashTagOutput = "/home/rushabhs/Desktop/CPRE/419/lab5/outputHashtag";
+        String followerOutput = "/home/rushabhs/Desktop/CPRE/419/lab5/outputFollower";
+        String profilicOutput = "/home/rushabhs/Desktop/CPRE/419/lab5/outputProfilic";
+        String mostProfilicOutput = "/home/rushabhs/Desktop/CPRE/419/lab5/outputMostProfilic";
         
         int reduce_tasks = 1;
         
         // Create a Hadoop Job
-        Job hashtagJob = Job.getInstance(conf, "Top Hashtags Job");
+        Job hashtagJob = Job.getInstance(conf, "Hashtags Job");
         
         // Attach the job to this Class
         hashtagJob.setJarByClass(TweetAnalysis.class); 
@@ -70,9 +81,9 @@ public class TweetAnalysis {
         
         // Run the job
         hashtagJob.waitForCompletion(true);
-
+        
         // Create a Hadoop Job
-        Job followerJob = Job.getInstance(conf, "Max Follower Job");
+        Job followerJob = Job.getInstance(conf, "Follower Job");
         
         // Attach the job to this Class
         followerJob.setJarByClass(TweetAnalysis.class); 
@@ -104,6 +115,74 @@ public class TweetAnalysis {
         
         // Run the job
         followerJob.waitForCompletion(true);
+
+        // Create a Hadoop Job
+        Job profilicUserJob = Job.getInstance(conf, "Profilic User Job");
+        
+        // Attach the job to this Class
+        profilicUserJob.setJarByClass(TweetAnalysis.class); 
+        
+        // Number of reducers
+        profilicUserJob.setNumReduceTasks(reduce_tasks);
+        
+        profilicUserJob.setMapOutputKeyClass(Text.class);
+        profilicUserJob.setMapOutputValueClass(Text.class);
+        profilicUserJob.setOutputKeyClass(Text.class); 
+        profilicUserJob.setOutputValueClass(IntWritable.class);
+        
+        // Set the Map class
+        profilicUserJob.setMapperClass(ProfilicUserMapper.class); 
+        profilicUserJob.setReducerClass(ProfilicUserReducer.class);
+        
+        // Set how the input is split
+        // TextInputFormat.class splits the data per line
+        profilicUserJob.setInputFormatClass(JSONInputFormat.class); 
+        
+        // Output format class
+        profilicUserJob.setOutputFormatClass(TextOutputFormat.class);
+        
+        // Input path
+        FileInputFormat.addInputPath(profilicUserJob, new Path(input)); 
+        
+        // Output path
+        FileOutputFormat.setOutputPath(profilicUserJob, new Path(profilicOutput));
+        
+        // Run the job
+        profilicUserJob.waitForCompletion(true);
+
+        // Create a Hadoop Job
+        Job profilicJob = Job.getInstance(conf, "Profilic Job");
+        
+        // Attach the job to this Class
+        profilicJob.setJarByClass(TweetAnalysis.class); 
+        
+        // Number of reducers
+        profilicJob.setNumReduceTasks(reduce_tasks);
+        
+        profilicJob.setMapOutputKeyClass(Text.class);
+        profilicJob.setMapOutputValueClass(IntWritable.class);
+        profilicJob.setOutputKeyClass(Text.class); 
+        profilicJob.setOutputValueClass(IntWritable.class);
+        
+        // Set the Map class
+        profilicJob.setMapperClass(ProfilicMapper.class); 
+        profilicJob.setReducerClass(ProfilicReducer.class);
+        
+        // Set how the input is split
+        // TextInputFormat.class splits the data per line
+        profilicJob.setInputFormatClass(TextInputFormat.class); 
+        
+        // Output format class
+        profilicJob.setOutputFormatClass(TextOutputFormat.class);
+        
+        // Input path
+        FileInputFormat.addInputPath(profilicJob, new Path(profilicOutput)); 
+        
+        // Output path
+        FileOutputFormat.setOutputPath(profilicJob, new Path(mostProfilicOutput));
+        
+        // Run the job
+        profilicJob.waitForCompletion(true);
     } 
 
     /**
@@ -119,7 +198,6 @@ public class TweetAnalysis {
 	  */
     public static class HashtagMapper extends Mapper<LongWritable, Text, Text, IntWritable>  {
         public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException  {
-            // NOTE: The following code works on the sample file. I have also validated the JSON with JSONlint. Though when I ran the same code with same library on cystorm, it keeps giving me json mal form errors.
             JsonParser parser = new JsonParser();
             JsonObject tweet = parser.parse(value.toString()).getAsJsonObject();
             JsonArray hashtags = tweet.getAsJsonObject("entities").getAsJsonArray("hashtags");
@@ -166,8 +244,8 @@ public class TweetAnalysis {
 	  *		KEY: File offset
 	  *		VALUE: The JSON string read as custom input.
 	  * Output:
-	  *		KEY: hashtags
-	  *		VALUE: 1
+	  *		KEY: Screen_name from the 'user' JsonObject.
+	  *		VALUE: Followers_count from the 'user' JsonObject
 	  */
     public static class FolloweMapper extends Mapper<LongWritable, Text, Text, IntWritable>  {
         public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException  {
@@ -183,11 +261,11 @@ public class TweetAnalysis {
 	  * This class will map convert the file to SequenceFileOutputFormat to create partitions.
 	  * 
 	  * Input:
-	  *		KEY: hashtags
-	  *		VALUE: 1
+	  *		KEY: Screen_name
+	  *		VALUE: followers_count list of this screen_name
 	  * Output:
-	  *		KEY: hashtags
-	  *		VALUE: # of times 
+	  *		KEY: Screen_name
+	  *		VALUE: Max followers_count from the list of followers_count.
 	  */
     public static class FollowerReducer extends Reducer<Text, IntWritable, Text, Text>  {
         public void reduce(Text key, Iterable<IntWritable> values, Context context) throws IOException, InterruptedException  {
@@ -199,6 +277,131 @@ public class TweetAnalysis {
                 }
             }
             context.write(key, new Text(Integer.toString(maxFollower)));
+        }
+    }
+
+    /**
+	  * ProfilicMapper class
+	  * This class will map convert the file to SequenceFileOutputFormat to create partitions.
+	  * 
+	  * Input:
+	  *		KEY: File offset
+	  *		VALUE: The JSON string read as custom input.
+	  * Output:
+	  *		KEY: Screen_name from the 'user' object
+	  *		VALUE: 1
+	  */
+    public static class ProfilicUserMapper extends Mapper<LongWritable, Text, Text, Text>  {
+        public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException  {
+            JsonParser parser = new JsonParser();
+            JsonObject tweet = parser.parse(value.toString()).getAsJsonObject();
+            // Get the screen name of this user
+            String user = tweet.getAsJsonObject("user").getAsJsonPrimitive("screen_name").getAsString();
+            // Get all hashtags from this tweet.
+            JsonArray hashtags = tweet.getAsJsonObject("entities").getAsJsonArray("hashtags");
+            StringBuilder hts = new StringBuilder();
+            if(hashtags != null && hashtags.size() > 0){
+                for(JsonElement tag: hashtags){
+                    JsonObject temp = tag.getAsJsonObject();
+                    String tagText = temp.get("text").getAsString();
+                    // Separate each hashtag by # sign.
+                    if(tagText != null && !tagText.equals("")){
+                        hts.append("#" + tagText);
+                    }
+                }
+                // Add a colon to separate different tweets.
+                hts.append(";");
+                context.write(new Text(user), new Text(hts.toString()));
+            }
+        }
+    }
+    
+    /**
+	  * ProfilicReducer class
+	  * This class will map convert the file to SequenceFileOutputFormat to create partitions.
+	  * 
+	  * Input:
+	  *		KEY: hashtags
+	  *		VALUE: 1
+	  * Output:
+	  *		KEY: hashtags
+	  *		VALUE: # of times 
+	  */
+    public static class ProfilicUserReducer extends Reducer<Text, Text, Text, IntWritable>  {
+        // Maps users to number of tweets.
+        Map<Text, Integer> users = new HashMap<Text, Integer>();
+        Map<Text, Text> popHashtag = new HashMap<Text, Text>();
+        public void reduce(Text key, Iterable<Text> values, Context context) throws IOException, InterruptedException  {
+            String screen_name =  key.toString();
+            for (Text val : values) {
+                // Split the tags by ';', which denotes they belog to separate tweets.
+                String[] hashTags = val.toString().split(";");
+                // hashTags.length is the number of tweets by user 'key'
+                users.put(key, hashTags.length);
+                popHashtag.put(key, val);
+            }
+        }
+
+        @Override
+        protected void cleanup(Context context) throws IOException, InterruptedException {
+            int count = 0;
+            List<Map.Entry<Text, Integer>> userList = new LinkedList<Map.Entry<Text, Integer>>(users.entrySet());
+            // Sort the list in decending fashion for the number of tweets.
+            Collections.sort(userList, new Comparator<Map.Entry<Text, Integer>>() {
+            public int compare( Map.Entry<Text, Integer> o1, Map.Entry<Text, Integer> o2 ) {
+                return (o2.getValue()).compareTo(o1.getValue() );
+            }
+            });
+            for(int i=0; i<10; i++){
+                Map.Entry<Text, Integer> user = userList.get(i);
+                String[] allHt = popHashtag.get(user.getKey()).toString().split("#");
+                for(String tag: allHt){
+                    if(!tag.isEmpty() && tag != null){
+                        // Emit all tags with 1 for these top prolific users.
+                        context.write(new Text(tag), new IntWritable(1));
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+	  * ProfilicMapper class
+	  * This class will map convert the file to SequenceFileOutputFormat to create partitions.
+	  * 
+	  * Input:
+	  *		KEY: File offset
+	  *		VALUE: The JSON string read as custom input.
+	  * Output:
+	  *		KEY: Hashtag name
+	  *		VALUE: value 1
+	  */
+    public static class ProfilicMapper extends Mapper<LongWritable, Text, Text, IntWritable>  {
+        public void map(LongWritable key, Text value, Context context) throws IOException, InterruptedException  {
+            // Just emit it as it is. We will aggregate it in reducer.
+            context.write(value, new IntWritable(1));
+        }
+    }
+    
+    /**
+	  * ProfilicReducer class
+	  * This class will map convert the file to SequenceFileOutputFormat to create partitions.
+	  * 
+	  * Input:
+	  *		KEY: hashtags
+	  *		VALUE: 1
+	  * Output:
+	  *		KEY: hashtags
+	  *		VALUE: # of times 
+	  */
+    public static class ProfilicReducer extends Reducer<Text, IntWritable, Text, IntWritable>  {
+        public void reduce(Text key, Iterable<IntWritable> values, Context context) throws IOException, InterruptedException  {
+            int count = 0;
+            for (IntWritable val : values) {
+                count++;
+            }
+            // Hashtag and total count among the top prolific users.
+            context.write(key, new IntWritable(count));
         }
     }
 
@@ -306,16 +509,6 @@ public class TweetAnalysis {
             }
             if(temp_text != null){
                 value.set(jsonText.toString());
-
-                // System.out.println("Value is " + jsonText.toString());
-                // System.out.println((new Gson().fromJson(value.toString(),JsonElement.class)).getClass().getName());
-
-                // value.set(new Gson().toJson(jsonText.toString()));
-                // if((new JsonParser().parse(jsonText.toString())).isJsonObject()){
-                //     JsonObject tweet = new JsonParser().parse(jsonText.toString()).getAsJsonObject();
-                //     System.out.println(tweet.get("hashtags"));
-                // }
-                // System.out.println((new JsonParser().parse(jsonText.toString())).isJsonArray());
             }
             return true;
         }
