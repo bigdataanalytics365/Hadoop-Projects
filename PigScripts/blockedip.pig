@@ -1,13 +1,23 @@
+-- Firewall log format: <Time> <Connection ID> <Source IP> <Destination IP> “Blocked”
+-- Load dat from two files
 trace_file_input = LOAD '/class/s17419/lab6/ip_trace' USING PigStorage(' ') AS (time:chararray, cid:int, src:chararray, sign:chararray, dst:chararray, protocol:chararray, extra:chararray);
 block_file_input = LOAD '/class/s17419/lab6/raw_block' USING PigStorage(' ') AS (cid:int, status:chararray);
-tcp_input = FILTER file_input BY protocol == 'tcp';
-filter_input = FOREACH tcp_input GENERATE SUBSTRING(src, 0, LAST_INDEX_OF(src, '.')) AS source, SUBSTRING(dst, 0, LAST_INDEX_OF(dst,'.')) AS destination;
-iprecords = GROUP filter_input BY source;
+-- Filter raw_block with by status == 'Blocked'
+blocked_input = FILTER block_file_input BY status == 'Blocked';
+-- Join the two by Connection id
+joined_input = JOIN trace_file_input BY cid, blocked_input BY cid;
+-- Select out necessary info.
+records = FOREACH joined_input GENERATE trace_file_input::time, trace_file_input::cid, trace_file_input::src, trace_file_input::dst, blocked_input::status;
+-- Store records into firewall file.
+-- STORE records INTO '/scr/rvshah/lab6/exp3/firewall/';
+-- Generate distinct source ip
+source_records = FOREACH records GENERATE trace_file_input::src AS source, trace_file_input::dst AS destination;
+iprecords = GROUP source_records BY source;
 totals = FOREACH iprecords {
-		src = DISTINCT filter_input.source;
-		dst = DISTINCT filter_input.destination;
-		GENERATE FLATTEN( src ) AS source, COUNT( dst ) AS dest_count;
+		src = DISTINCT source_records.source;
+		GENERATE FLATTEN( src ) AS source, COUNT( source_records.destination ) AS dest_count;
 	}
-top10 = LIMIT (ORDER totals BY dest_count DESC) 10;
--- dump totals;
-STORE top10 INTO '/scr/rvshah/lab6/exp2/output/';
+-- Order blocked ip by # of times they were blocked DESC.
+blocked_ips = ORDER totals BY dest_count DESC;
+-- Store all blocked ip in to output
+STORE blocked_ips INTO '/scr/rvshah/lab6/exp3/output/';
