@@ -1,0 +1,19 @@
+-- LOAD data from csv file
+file_input = LOAD '/class/s17419/lab7/historicaldata.csv' USING PigStorage(',') AS (ticker:chararray, date:long, open:float, high:float, low:float, close:float, volume:long);
+-- -- Generate the necessary columns needed.
+-- records = FOREACH file_input GENERATE state, aland;
+-- -- Group the records relation by state 
+-- statebag = GROUP records BY state;
+-- -- For each of the state generate the state name and the count of the total land area.
+-- totals = FOREACH statebag {
+-- 		total = SUM(records.aland);
+-- 		st = DISTINCT records.state;
+-- 		GENERATE FLATTEN(st) AS state, total as land_area;
+-- 	}
+-- -- Order the totals by the land area descending and limit number of records to 10.
+-- top10 = LIMIT (ORDER totals BY land_area DESC) 10;
+-- -- Print out thte results in terminal.
+-- dump top10;
+-- -- Store the output into a file
+-- STORE top10 INTO 'lab6/landarea';
+-- 
