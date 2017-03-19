@@ -1,5 +1,5 @@
 -- Register the jar file
-REGISTER 'lab7/stockanalysis.jar';
+REGISTER '/home/rvshah/lab7/stockanalysis.jar';
 -- LOAD data from csv file
 -- file_input = LOAD '/class/s17419/lab7/historicaldata.csv' USING PigStorage(',') AS (ticker:chararray, date:long, open:float, high:float, low:float, close:float, volume:long);
 file_input = LOAD '/home/rvshah/lab7/test.csv' USING PigStorage(',') AS (ticker:chararray, date:long, open:chararray, high:chararray, low:chararray, close:chararray, volume:long);
@@ -14,9 +14,7 @@ open_price_one = FOREACH (GROUP period_one BY ticker) {
     first_available = LIMIT first_ordered 1;
     last_ordered = ORDER period_one BY date DESC;
     last_available = LIMIT last_ordered 1;
-    growth_factor = stockanalysis.GrowthFactor(period_one);
-    GENERATE group AS company, growth_factor;
-    -- FLATTEN(first_available.open) AS first_open, FLATTEN(last_available.open) AS last_open;
+    GENERATE group AS company, FLATTEN(first_available.open) AS first_open, FLATTEN(last_available.open) AS last_open;
 }
 -- Compute the period two growth rates
 open_price_two = FOREACH (GROUP period_two BY ticker) {
@@ -27,4 +25,13 @@ open_price_two = FOREACH (GROUP period_two BY ticker) {
     GENERATE group AS company, FLATTEN(first_available.open) AS first_open, FLATTEN(last_available.open) AS last_open;
 }
 -- Get companies that only appear for one day in each perid, (i.e) Only has one record in the time period.
+growth_factor_one = FOREACH open_price_one {
+    temp = TOTUPLE(open_price_one.first_open, open_price_one.last_open);
+    GENERATE open_price_one.company, stockanalysis.GrowthFactor(temp);
+}
+-- growth_factor = stockanalysis.GrowthFactor(period_one);
+-- GENERATE group AS company, growth_factor;
+-- FLATTEN(first_available.open) AS first_open, FLATTEN(last_available.open) AS last_open;
+
 DUMP open_price_one;
+DUMP growth_factor_one;

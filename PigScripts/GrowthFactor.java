@@ -8,18 +8,23 @@ import org.apache.pig.data.Tuple;
 import org.apache.pig.EvalFunc;
 import org.apache.pig.data.Tuple;
 import org.apache.pig.data.DataBag;
+import org.apache.pig.data.InternalCachedBag;
 
-public class GrowthFactor extends EvalFunc<Integer>{
+public class GrowthFactor extends EvalFunc<Float>{
 
-    public Integer exec(Tuple input) throws IOException {
-        // if (input == null || input.size() == 0 || input.size() != 2){
+    public Float exec(Tuple input) throws IOException {
         if (input == null || input.size() == 0){
             return null;
         }
-        // float growth_factor;
-        // float start = (float) input.get(0).toString();
-        // float end = (float) input.get(2);
-        // growth_factor = end / start;
-        return new Integer(input.size());
+        InternalCachedBag inputBag = (InternalCachedBag)input.get(0);
+        for (Tuple data : inputBag) {
+            float growth_factor;
+            float start = new Float(data.get(1).toString()).floatValue();
+            float end = new Float(data.get(2).toString()).floatValue();
+            growth_factor = end / start;
+            return new Float(growth_factor);
+        }
+        // Ideally it should never get here. For compiling purposes default to 0.
+        return new Float(0);
     }
 }
