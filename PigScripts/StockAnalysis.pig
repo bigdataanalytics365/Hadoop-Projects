@@ -8,19 +8,18 @@ input_data = FOREACH file_input GENERATE ticker, date, open;
 period_one = FILTER input_data BY date >= 19900101 AND date <= 20000103;
 -- Period two companies from 20050102 to 20140131 (i.e.) Jan 2nd 2005 to Jan 31st 2014
 period_two = FILTER input_data BY date >= 20050102 AND date <= 20140131;
--- Group the period_one and period_two records by the company and generate tuples for starting price and ending price.
-grouped_one = GROUP period_one BY ticker;
-grouped_two = GROUP period_two BY ticker;
 -- Compute the period one growth rates
-open_price_one = FOREACH grouped_one {
+open_price_one = FOREACH (GROUP period_one BY ticker) {
     first_ordered = ORDER period_one BY date ASC;
     first_available = LIMIT first_ordered 1;
     last_ordered = ORDER period_one BY date DESC;
     last_available = LIMIT last_ordered 1;
-    GENERATE group AS company, FLATTEN(first_available.open) AS first_open, FLATTEN(last_available.open) AS last_open;
+    growth_factor = stockanalysis.GrowthFactor(period_one);
+    GENERATE group AS company, growth_factor;
+    -- FLATTEN(first_available.open) AS first_open, FLATTEN(last_available.open) AS last_open;
 }
 -- Compute the period two growth rates
-open_price_two = FOREACH grouped_two {
+open_price_two = FOREACH (GROUP period_two BY ticker) {
     first_ordered = ORDER period_two BY date ASC;
     first_available = LIMIT first_ordered 1;
     last_ordered = ORDER period_two BY date DESC;
@@ -28,14 +27,4 @@ open_price_two = FOREACH grouped_two {
     GENERATE group AS company, FLATTEN(first_available.open) AS first_open, FLATTEN(last_available.open) AS last_open;
 }
 -- Get companies that only appear for one day in each perid, (i.e) Only has one record in the time period.
-growth_factor_one = FOREACH open_price_one {
-    growth_factor = stockanalysis.GrowthFactor(temp);
-    GENERATE open_price_one.company, temp;
-}
 DUMP open_price_one;
-DUMP growth_factor_one;
--- DUMP open_price_two;
--- test1 = LIMIT grouped_one 1;
--- test2 = LIMIT grouped_two 1;
--- DUMP test1;
--- DUMP test2;
