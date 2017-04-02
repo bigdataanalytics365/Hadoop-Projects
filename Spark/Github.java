@@ -49,7 +49,33 @@ public class Github {
 		 */
 		JavaPairRDD<String, Iterable<String>> grouped_repositories = repository_data.groupByKey();
 		
-		grouped_repositories.saveAsTextFile(args[1]);
+		/**
+		* Go through all the Pairs in grouped_repositories RDD and determine number of projects in the language,
+		* and name of the repository with max starts.
+		*/
+		JavaRDD<String> results = grouped_repositories.map(new Function<Tuple2<String, Iterable<String>>, String>() {
+		    @Override
+		    public String call(Tuple2<String, Iterable<String>> item) throws Exception {
+				// Extract languages most number of stars and total count of repositories using this language.
+		        String language = item._1;
+				String repoWithMaxStar = "";
+				int maxStars = 0;
+		        int count = 0;
+		        for (String s : item._2) {
+					String[] details = s.split(",");
+					int numStars = Integer.parseInt(details[1]);
+					if(numStars > maxStars){
+						maxStars = numStars;
+						repoWithMaxStar = details[0];
+					}
+		            count++;
+		        }
+				String record = language+"		"+Integer.toString(count)+"		"+repoWithMaxStar+"		"+Integer.toString(maxStars);
+		        return record;
+		    }
+		});
+		
+		results.saveAsTextFile(args[1]);
 		context.stop();
 		context.close();
 	}
