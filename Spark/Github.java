@@ -1,4 +1,3 @@
-
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
@@ -35,8 +34,11 @@ public class Github {
 				String[] tokens = s.split(",");
 				String repository = tokens[0];
 				String language = tokens[1];
-				String stars = tokens[12];
-				// Integer stars = new Integer(tokens[12]);
+				String stars = "0";
+				// By default set to 0 so that it does not go out of bounds.
+				if(tokens.length >= 12){
+					stars = tokens[12];
+				}
 				
 				String key = language;
 				String value = repository+","+stars;
@@ -53,9 +55,9 @@ public class Github {
 		* Go through all the Pairs in grouped_repositories RDD and determine number of projects in the language,
 		* and name of the repository with max starts.
 		*/
-		JavaRDD<String> results = grouped_repositories.map(new Function<Tuple2<String, Iterable<String>>, String>() {
+		JavaPairRDD<Integer,String> sorted = grouped_repositories.mapToPair(new PairFunction<Tuple2<String, Iterable<String>>, Integer, String>() {
 		    @Override
-		    public String call(Tuple2<String, Iterable<String>> item) throws Exception {
+		    public Tuple2<Integer,String> call(Tuple2<String, Iterable<String>> item) throws Exception {
 				// Extract languages most number of stars and total count of repositories using this language.
 		        String language = item._1;
 				String repoWithMaxStar = "";
@@ -71,7 +73,18 @@ public class Github {
 		            count++;
 		        }
 				String record = language+"		"+Integer.toString(count)+"		"+repoWithMaxStar+"		"+Integer.toString(maxStars);
-		        return record;
+		        return new Tuple2<Integer,String>(new Integer(count),record);
+		    }
+		}).sortByKey(false);
+
+
+		/**
+		* Reformating output
+		*/
+		JavaRDD<String> results = sorted.map(new Function<Tuple2<Integer, String>, String>() {
+		    @Override
+		    public String call(Tuple2<Integer, String> item) throws Exception {
+				return item._2;
 		    }
 		});
 		
