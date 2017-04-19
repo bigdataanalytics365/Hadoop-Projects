@@ -1,0 +1,65 @@
+type CountType = tuple<rstring word, int32 count>;
+
+int32 countWords(rstring line, rstring wordType) {
+	mutable int32 count = 0;
+	list<rstring> tokens = tokenize(line, " ", false);
+	for(int32 i in range(tokens)){
+		if(findFirst(tokens[i],wordType) != -1){
+			count++;
+		}
+	}
+	return count;
+} // End of function countWords
+
+void updateCounts(mutable CountType x, CountType y){
+	x.count += y.count;
+} // End of function updateCounts
+
+composite Big {
+	graph
+		stream <rstring lineContents> Data = FileSource() {
+			param
+				format: line;
+				file: getSubmissionTimeValue("file");
+				// file		: "big.txt";
+		} // End of FileSource.
+		
+		stream<rstring contents> Numbered = Functor(Data) {
+			logic state : { mutable int32 i = 0; }
+			onTuple Data : { i++; }
+			output Numbered : contents = (rstring)i + " " + lineContents;
+		} // End of Numbered
+		
+		() as Sink = FileSink(Numbered){
+			param
+				file : "bigresults.txt";
+		} // End of FileSink for Numbered
+
+		stream <CountType> Counts = Custom(Data) {
+			logic
+				state: {
+					mutable CountType history = {word = "history", count = 0};
+					mutable CountType adventure = {word = "adventure", count = 0};
+				}
+				
+				onTuple Data: {
+					CountType historyTemp = {word = "history", count = countWords(lineContents, "history")};
+					CountType adventureTemp = {word = "adventure", count = countWords(lineContents, "adventure")};
+					updateCounts(history, historyTemp);
+					updateCounts(adventure, adventureTemp);
+				} // End of onTuple Counts
+
+				onPunct Data: {
+					if (currentPunct() == Sys.FinalMarker) {
+						submit(history, Counts);
+						submit(adventure, Counts);
+						submit(Sys.WindowMarker, Counts);
+					}
+				} // End of onPunct Counts
+		} // End of Custom.
+		
+		() as Sink1 = FileSink(Counts){
+			param
+				file : "counts.txt";
+		} // End of FileSink for Counts
+} // End of Big.
