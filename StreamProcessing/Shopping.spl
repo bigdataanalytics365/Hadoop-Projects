@@ -1,0 +1,33 @@
+type Transaction = tuple<rstring id, rstring firstName, rstring lastName, float64 amount>;
+type Status = tuple<rstring id, rstring customerName, float64 amount, float64 discount>;
+
+float64 getDiscount(float64 x){
+	if(x < 500.00f){
+		return x * 0.01f;
+	}
+	if(x < 1000.00f){
+		return x * 0.02f;
+	}
+	return x * 0.05f;
+} // End of function updateCounts
+
+composite Shopping {
+	graph
+		stream <Transaction> Data = FileSource() {
+			param
+				format: csv;
+				file: getSubmissionTimeValue("file");
+				hasHeaderLine : true;
+				// file		: "shopping.txt";
+		} // End of FileSource.
+		
+		stream <Status> Results = Functor(Data) {
+			param filter : amount >= 250.00f;
+			output Results : customerName = concat(concat(firstName, " "), lastName), discount = getDiscount(amount);
+		} // End Results
+		
+		() as Sink = FileSink(Results){
+			param
+				file : "CustomerStatus.txt";
+		} // End of FileSink for Numbered
+} // End of Shopping.
