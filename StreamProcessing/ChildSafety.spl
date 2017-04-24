@@ -1,5 +1,10 @@
-type Child = tuple<rstring time, rstring childId, rstring parentName, rstring childName, rstring phone>;
-type SensorData = tuple<rstring time, rstring sensorId, rstring childId, rstring fromRoom, rstring toRoom>;
+// Useful site
+// https://www.ibm.com/developerworks/data/library/techarticle/dm-1204infostreamsfeatures2/
+
+namespace ChildSafety;
+
+type Child = tuple<rstring time, rstring childId, rstring parentName, rstring childName, rstring phone>;	// Child data tuple as read in from the csv file.
+type Sensor = tuple<rstring time, rstring sensorId, rstring childId, rstring fromRoom, rstring toRoom>;		// Sensor Data Type tuple as read in from the csv file.
 type LocationLog = tuple<rstring time, rstring childId, rstring currentRoom>;					// LocationLog.txt
 type MissingChild = tuple<rstring time, rstring childId, rstring lastTime, rstring lastRoom, rstring phone>;	// MissingChildAlert.txt
 type DangerRoom = tuple<rstring time, rstring childId, rstring phone>;						// UnsafeRoomAlert.txt
@@ -21,20 +26,35 @@ composite ChildSafety {
 		stream <Child> ChildData = FileSource() {
 			param
 				format: csv;
-				file: getSubmissionTimeValue("file");
+				file: getSubmissionTimeValue("childFile");
 				hasHeaderLine : false;
 				// file		: "ChildDetails.csv";
-		} // End of FileSource.
+		} // End of FileSource ChildData.
+
+		stream <Sensor> SensorData = FileSource() {
+			param
+				format: csv;
+				file: getSubmissionTimeValue("sensorFile");
+				hasHeaderLine: false;
+				// file : "SensorData.csv"
+		} // End of FileSource SensorData.
 		
-		stream <Status> Results = Custom(Data) {
+		stream <LocationLog> Results = Functor(ChildData) {
 			logic 
 				state : {
-						list<Child> childData;
+						list<Child> childData = [];
 					}
 			onTuple ChildData: {
-					appendM(childData, {time, childId, parentName, childName, phone});
+					mutable Child tempChild = {
+						time = time,
+						childId = childId,
+						parentName = parentName,
+						childName = childName,
+						phone = phone
+					};
+					appendM(childData, tempChild);
 					} 
-			output Results : customerName = concat(concat(firstName, " "), lastName), discount = getDiscount(amount);
+			// output Results : customerName = concat(concat(firstName, " "), lastName), discount = getDiscount(amount);
 		} // End Results
 		
 		() as Sink = FileSink(Results){
@@ -42,7 +62,3 @@ composite ChildSafety {
 				file : "LocationLog.txt";
 		} // End of FileSink for Numbered
 } // End of ChildSafety.
-
-
-// Useful site
-// https://www.ibm.com/developerworks/data/library/techarticle/dm-1204infostreamsfeatures2/
