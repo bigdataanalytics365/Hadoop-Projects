@@ -1,34 +1,24 @@
 // Useful site
 // https://www.ibm.com/developerworks/data/library/techarticle/dm-1204infostreamsfeatures2/
 
-namespace ChildSafety;
-
-type Child = tuple<rstring time, rstring childId, rstring parentName, rstring childName, rstring phone>;	// Child data tuple as read in from the csv file.
+type ChildTemp = tuple<rstring time, rstring childId, rstring parentName, rstring childName, rstring phone>;	// Child data tuple as read in from the csv file.
+type Child = tuple<rstring time, rstring childId, rstring parentName, rstring childName, rstring phone, rstring toRoom>;	// Child data tuple as read in from the csv file.
 type Sensor = tuple<rstring time, rstring sensorId, rstring childId, rstring fromRoom, rstring toRoom>;		// Sensor Data Type tuple as read in from the csv file.
-type LocationLog = tuple<rstring time, rstring childId, rstring currentRoom>;					// LocationLog.txt
-type MissingChild = tuple<rstring time, rstring childId, rstring lastTime, rstring lastRoom, rstring phone>;	// MissingChildAlert.txt
-type DangerRoom = tuple<rstring time, rstring childId, rstring phone>;						// UnsafeRoomAlert.txt
-type RoomHourStat = tuple<rstring time, rstring roomNumber, rstring numChildren>;				// RoomStats.txt
-type ChildHourStat = tuple<rstring time, rstring childId, rstring numRooms>;					// ChildStats.txt
-
-float64 getDiscount(float64 x){
-	if(x < 500.00f){
-		return x * 0.01f;
-	}
-	if(x < 1000.00f){
-		return x * 0.02f;
-	}
-	return x * 0.05f;
-} // End of function updateCounts
+type CombinedData = tuple<rstring time, rstring childId, rstring toRoom>;
+type LocationLog = tuple<rstring time, rstring childId, rstring currentRoom>;								// LocationLog.txt
+type MissingChild = tuple<rstring time, rstring childId, rstring lastTime, rstring lastRoom, rstring phone>;// MissingChildAlert.txt
+type DangerRoom = tuple<rstring time, rstring childId, rstring phone>;										// UnsafeRoomAlert.txt
+type RoomHourStat = tuple<rstring time, rstring roomNumber, rstring numChildren>;							// RoomStats.txt
+type ChildHourStat = tuple<rstring time, rstring childId, rstring numRooms>;								// ChildStats.txt
 
 composite ChildSafety {
 	graph
-		stream <Child> ChildData = FileSource() {
+		stream <ChildTemp> ChildFile = FileSource() {
 			param
 				format: csv;
 				file: getSubmissionTimeValue("childFile");
 				hasHeaderLine : false;
-				// file		: "ChildDetails.csv";
+				// file		: "ChildTest.csv";
 		} // End of FileSource ChildData.
 
 		stream <Sensor> SensorData = FileSource() {
@@ -36,29 +26,49 @@ composite ChildSafety {
 				format: csv;
 				file: getSubmissionTimeValue("sensorFile");
 				hasHeaderLine: false;
-				// file : "SensorData.csv"
+				// file : "SensorTest.csv";
 		} // End of FileSource SensorData.
 		
-		stream <LocationLog> Results = Functor(ChildData) {
-			logic 
-				state : {
-						list<Child> childData = [];
-					}
-			onTuple ChildData: {
-					mutable Child tempChild = {
+		stream <Child> ChildData = Custom(ChildFile) {
+			logic
+//				state : {
+						// map<rstring, Child> childData = {};						
+//					}
+			onTuple ChildFile: {
+					Child tempChild = {
 						time = time,
 						childId = childId,
 						parentName = parentName,
 						childName = childName,
-						phone = phone
+						phone = phone,
+						toRoom = "1000"
 					};
-					appendM(childData, tempChild);
-					} 
-			// output Results : customerName = concat(concat(firstName, " "), lastName), discount = getDiscount(amount);
-		} // End Results
+					submit(tempChild, ChildData);
+					// insert(childData, childId, tempChild);
+			} // End onTuple ChildData
+		} // End ChildData
 		
-		() as Sink = FileSink(Results){
+		stream <CombinedData> MergedData = Union(ChildData; SensorData) {}
+	
+		stream <LocationLog> LocationData = Custom(MergedData) {
+			logic
+				state : {
+						map<rstring, Child> childData = {};						
+					}
+			onTuple MergedData: {
+					rstring hour = substring(time, 0, 2);
+					LocationLog location = {
+						time = hour,
+						childId = childId,
+						currentRoom = toRoom
+					};
+					submit(location, LocationData);
+					// insert(childData, childId, tempChild);
+			} // End onTuple ChildData
+		} // End ChildData
+		
+		() as Sink = FileSink(LocationData){
 			param
 				file : "LocationLog.txt";
-		} // End of FileSink for Numbered
+		} // End of FileSink for LocationLog
 } // End of ChildSafety.
