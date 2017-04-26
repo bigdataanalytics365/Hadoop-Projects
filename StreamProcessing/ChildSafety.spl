@@ -2,14 +2,16 @@
 // https://www.ibm.com/developerworks/data/library/techarticle/dm-1204infostreamsfeatures2/
 
 type ChildTemp = tuple<rstring time, rstring childId, rstring parentName, rstring childName, rstring phone>;	// Child data tuple as read in from the csv file.
-type Child = tuple<rstring time, rstring childId, rstring parentName, rstring childName, rstring phone, rstring toRoom>;	// Child data tuple as read in from the csv file.
-type Sensor = tuple<rstring time, rstring sensorId, rstring childId, rstring fromRoom, rstring toRoom>;		// Sensor Data Type tuple as read in from the csv file.
-type CombinedData = tuple<rstring time, rstring childId, rstring toRoom>;
+type Child = tuple<rstring time, rstring childId, rstring parentName, rstring childName, rstring phone, rstring toRoom, boolean ignore>;	// Child data tuple as read in from the csv file.
+type SensorTemp = tuple<rstring time, rstring sensorId, rstring childId, rstring fromRoom, rstring toRoom>;		// Sensor Data Type tuple as read in from the csv file.
+type Sensor = tuple<rstring time, rstring sensorId, rstring childId, rstring fromRoom, rstring toRoom, boolean ignore, rstring phone>;		// Sensor Data Type tuple as read in from the csv file.
+type CombinedData = tuple<rstring time, rstring childId, rstring toRoom, boolean ignore, rstring phone>;
 type LocationLog = tuple<rstring time, rstring childId, rstring currentRoom>;								// LocationLog.txt
+type LocationLogMissing = tuple<rstring time, rstring childId, rstring currentRoom, rstring phone>;								// LocationLog.txt
 type MissingChild = tuple<rstring time, rstring childId, rstring lastTime, rstring lastRoom, rstring phone>;// MissingChildAlert.txt
 type DangerRoom = tuple<rstring time, rstring childId, rstring phone>;										// UnsafeRoomAlert.txt
-type RoomHourStat = tuple<rstring time, rstring roomNumber, rstring numChildren>;							// RoomStats.txt
-type ChildHourStat = tuple<rstring time, rstring childId, rstring numRooms>;								// ChildStats.txt
+type RoomHourStat = tuple<rstring time, rstring roomNumber, int32 numChildren>;							// RoomStats.txt
+type ChildHourStat = tuple<rstring time, rstring childId, int32 numRooms>;								// ChildStats.txt
 
 composite ChildSafety {
 	graph
@@ -21,7 +23,7 @@ composite ChildSafety {
 				// file		: "ChildTest.csv";
 		} // End of FileSource ChildData.
 
-		stream <Sensor> SensorData = FileSource() {
+		stream <SensorTemp> SensorFile = FileSource() {
 			param
 				format: csv;
 				file: getSubmissionTimeValue("sensorFile");
@@ -31,39 +33,102 @@ composite ChildSafety {
 		
 		stream <Child> ChildData = Custom(ChildFile) {
 			logic
-//				state : {
-						// map<rstring, Child> childData = {};						
-//					}
-			onTuple ChildFile: {
+				state : mutable rstring formattedTime = "";
+				onTuple ChildFile: {
+					if(length(time) < 10){
+						formattedTime = concat(time,"000");
+					}else if(length(time) < 11){
+						formattedTime = concat(time,"00");
+					}else if(length(time) < 12){
+						formattedTime = concat(time,"0");
+					}else{
+						formattedTime = time;
+					}
+
 					Child tempChild = {
-						time = time,
+						time = formattedTime,
 						childId = childId,
 						parentName = parentName,
 						childName = childName,
 						phone = phone,
-						toRoom = "1000"
+						toRoom = "1000",
+						ignore = true
 					};
 					submit(tempChild, ChildData);
-					// insert(childData, childId, tempChild);
-			} // End onTuple ChildData
+				} // End onTuple ChildData
 		} // End ChildData
 		
-		stream <CombinedData> MergedData = Union(ChildData; SensorData) {}
+		stream <Sensor> SensorData = Custom(SensorFile) {
+			logic
+				state: mutable rstring formattedTime = "";
+
+				onTuple SensorFile: {
+					if(length(time) < 10){
+						formattedTime = concat(time,"000");
+					}else if(length(time) < 11){
+						formattedTime = concat(time,"00");
+					}else if(length(time) < 12){
+						formattedTime = concat(time,"0");
+					}else{
+						formattedTime = time;
+					}
+
+					Sensor tempSensor = {
+						time = formattedTime,
+						sensorId = sensorId,
+						childId = childId,
+						fromRoom = fromRoom,
+						toRoom = toRoom,
+						ignore = false,
+						phone = ""
+					};
+					submit(tempSensor, SensorData);
+				} // End onTuple SensorData
+		} // End SensorData
+		
+		stream <CombinedData> UnionData = Union(ChildData; SensorData) {}
 	
+		stream <CombinedData> MergedData = Sort(UnionData) {
+			window
+				UnionData : sliding, count(200);
+			param
+				sortBy : time;
+		}
+
 		stream <LocationLog> LocationData = Custom(MergedData) {
 			logic
 				state : {
-						map<rstring, Child> childData = {};						
+						mutable timestamp lastTimestamp = timeStringToTimestamp("04-OCT-2005","09:00:00.000",false);
+						mutable timestamp newTimestamp = timeStringToTimestamp("04-OCT-2005","09:00:00.000",false);
+						mutable map<rstring, LocationLog> locationData ={};
 					}
+					
 			onTuple MergedData: {
-					rstring hour = substring(time, 0, 2);
+					newTimestamp = timeStringToTimestamp("04-OCT-2005",time,false);
+					
+					// Temporary variable to be used in this context.
 					LocationLog location = {
-						time = hour,
+						time = time,
 						childId = childId,
 						currentRoom = toRoom
-					};
-					submit(location, LocationData);
-					// insert(childData, childId, tempChild);
+					};	
+
+					// Check if we already have this childId in the map.
+					if(has(locationData,childId)){
+						locationData[childId] = location;
+					}else{
+						// Insert this location to locationData.
+						locationData = insert(locationData, childId, location);
+					}
+
+					// If it has been 5 minutes, output the locations for each child.
+					if(diffAsSecs(newTimestamp , lastTimestamp) > 300.0){
+						for(rstring id in keys(locationData)){
+							// We need to submit all from last 5 minutes (300 seconds).
+							submit(locationData[id], LocationData);
+						}
+						lastTimestamp = newTimestamp;
+					}
 			} // End onTuple ChildData
 		} // End ChildData
 		
@@ -71,4 +136,207 @@ composite ChildSafety {
 			param
 				file : "LocationLog.txt";
 		} // End of FileSink for LocationLog
+				
+		stream <MissingChild> MissingChildData = Custom(MergedData) {
+			logic
+				state : {
+						mutable timestamp lastTimestamp = timeStringToTimestamp("04-OCT-2005","09:00:00.000",false);
+						mutable timestamp newTimestamp = timeStringToTimestamp("04-OCT-2005","09:00:00.000",false);
+						mutable map<rstring, LocationLogMissing> locationData ={};
+					}
+					
+			onTuple MergedData: {
+					newTimestamp = timeStringToTimestamp("04-OCT-2005",time,false);
+					
+					// Temporary variable to be used in this context.
+					LocationLogMissing location = {
+						time = time,
+						childId = childId,
+						currentRoom = toRoom,
+						phone = phone
+					};	
+
+					// Check if we already have this childId in the map.
+					if(has(locationData,childId)){
+						locationData[childId] = location;
+					}else{
+						// Insert this location to locationData.
+						locationData = insert(locationData, childId, location);
+					}
+
+					if(!ignore){
+						for(rstring id in keys(locationData)){
+							// If it has been more than 15 minutes, since the last time we saw this child output it to the alert system.
+							// Since we are using the time stamps relative to the sensor data file, I used that as the base for comparing time elapsed.
+							if(diffAsSecs(newTimestamp , timeStringToTimestamp("04-OCT-2005",locationData[id].time,false)) > 900.0 && locationData[id].phone != ""){
+								MissingChild m = {
+									time = time, 
+									childId = id, 
+									lastTime = locationData[id].time, 
+									lastRoom = locationData[id].currentRoom, 
+									phone = locationData[id].phone
+								};
+								submit(m, MissingChildData);
+							}
+							lastTimestamp = newTimestamp;
+						}
+					} // End if we need to ignore this tuple
+			} // End onTuple ChildData
+		} // End ChildData
+
+		() as SinkMissingChild = FileSink(MissingChildData){
+			param
+				file : "MissingChildAlert.txt";
+		} // End of FileSink for LocationLog
+		
+		stream <DangerRoom> DangerRoomData = Custom(MergedData) {
+			logic
+				state : {
+						mutable timestamp lastTimestamp = timeStringToTimestamp("04-OCT-2005","09:00:00.000",false);
+						mutable timestamp newTimestamp = timeStringToTimestamp("04-OCT-2005","09:00:00.000",false);
+						mutable map<rstring, LocationLogMissing> locationData ={};
+					}
+					
+			onTuple MergedData: {
+					newTimestamp = timeStringToTimestamp("04-OCT-2005",time,false);
+					
+					// Temporary variable to be used in this context.
+					LocationLogMissing location = {
+						time = time,
+						childId = childId,
+						currentRoom = toRoom,
+						phone = phone
+					};	
+
+					for(rstring id in keys(locationData)){
+						// If it has been more than 5 minutes, since the last time we saw this child in room 26 and still is in room 26,
+						// or if we haven't received any other sensor data from that child, Output him to UnsafeRoomAlert.txt
+						if(diffAsSecs(newTimestamp , timeStringToTimestamp("04-OCT-2005",locationData[id].time,false)) > 300.0 
+							&& locationData[id].phone != "" && locationData[id].currentRoom == "26"){
+							DangerRoom d = {
+								time = time, 
+								childId = id, 
+								phone = phone
+							};
+							submit(d, DangerRoomData);
+						}
+						lastTimestamp = newTimestamp;
+					}
+
+					// Check if we already have this childId in the map.
+					if(has(locationData,childId)){
+						locationData[childId] = location;
+					}else{
+						// Insert this location to locationData.
+						locationData = insert(locationData, childId, location);
+					}
+			} // End onTuple ChildData
+		} // End ChildData
+
+		() as SinkDangerRoom = FileSink(DangerRoomData){
+			param
+				file : "UnsafeRoomAlert.txt";
+		} // End of FileSink for LocationLog
+
+		// Note in both hourly stats, the time of the first sensor event in that hour is used rather than manual computation. 
+		// if desired it could easily be changed with the help of timeStringToTimestamp and add method. 
+		// Room stats only outputs stats for those rooms who have atleast one child in it. All the other rooms then have no children in them.		
+		stream <RoomHourStat> RoomStatData = Custom(MergedData) {
+			logic
+				state : {
+						mutable timestamp lastTimestamp = timeStringToTimestamp("04-OCT-2005","09:00:00.000",false);
+						mutable timestamp newTimestamp = timeStringToTimestamp("04-OCT-2005","09:00:00.000",false);
+						mutable map<rstring, RoomHourStat> rooms ={};
+					}
+					
+			onTuple MergedData: {
+					newTimestamp = timeStringToTimestamp("04-OCT-2005",time,false);
+					
+					mutable RoomHourStat rhs = {
+						time = time, 
+						roomNumber = toRoom, 
+						numChildren = 1
+					};
+
+					if(has(rooms,toRoom)){
+						int32 numCh = rooms[toRoom].numChildren + 1; 
+						rhs = {
+							time = rooms[toRoom].time, 
+							roomNumber = toRoom, 
+							numChildren = numCh
+						};
+						rooms[toRoom] = rhs;
+					}else{
+						// Insert this location to locationData.
+						rooms = insert(rooms, toRoom, rhs);
+					}
+
+						// Check if it has been an hour.
+					if(diffAsSecs(newTimestamp , lastTimestamp) > 1800.0){
+						for(rstring id in keys(rooms)){
+							submit(rooms[id], RoomStatData);
+						}
+						
+						// Reset time.
+						lastTimestamp = newTimestamp;
+						// Clear location data.
+						clearM(rooms);
+					}
+			} // End onTuple ChildData
+		} // End ChildData
+
+		() as SinkRoomHour = FileSink(RoomStatData){
+			param
+				file : "RoomStats.txt";
+		} // End of FileSink for LocationLog	
+
+		// Only those children who were recorded to have atlest one sensor data during the hour are output to the file records.
+		stream <ChildHourStat> ChildStatData = Custom(MergedData) {
+			logic
+				state : {
+						mutable timestamp lastTimestamp = timeStringToTimestamp("04-OCT-2005","09:00:00.000",false);
+						mutable timestamp newTimestamp = timeStringToTimestamp("04-OCT-2005","09:00:00.000",false);
+						mutable map<rstring, ChildHourStat> children ={};
+					}
+					
+			onTuple MergedData: {
+					newTimestamp = timeStringToTimestamp("04-OCT-2005",time,false);
+					
+					mutable ChildHourStat rhs = {
+						time = time, 
+						childId = childId, 
+						numRooms = 1
+					};
+
+					if(has(children,childId)){
+						int32 numRm = children[childId].numRooms + 1; 
+						rhs = {
+							time = children[childId].time, 
+							childId = childId, 
+							numRooms = numRm
+						};
+						children[childId] = rhs;
+					}else{
+						// Insert this location to locationData.
+						children = insert(children, childId, rhs);
+					}
+
+						// Check if it has been an hour.
+					if(diffAsSecs(newTimestamp , lastTimestamp) > 1800.0){
+						for(rstring id in keys(children)){
+							submit(children[id], ChildStatData);
+						}
+						
+						// Reset time.
+						lastTimestamp = newTimestamp;
+						// Clear location data.
+						clearM(children);
+					}
+			} // End onTuple ChildData
+		} // End ChildData
+
+		() as SinkChildHour = FileSink(ChildStatData){
+			param
+				file : "ChildStats.txt";
+		} // End of FileSink for LocationLog	
 } // End of ChildSafety.
